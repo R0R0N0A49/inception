@@ -1,17 +1,23 @@
-FROM alpine:3.17
+FROM debian:bullseye
 
-# Installer MariaDB avec apk (pas apt)
-RUN apk update && apk upgrade && \
-    apk add mariadb mariadb-client mariadb-common mariadb-openrc
+RUN apt update && apt upgrade
+RUN apt-get install -y mariadb-server \
+    mariadb-client \
+    vim \
+    && ls /var/lib/apt/lists/ \
+    && rm -rf /var/lib/apt/lists/*
 
-# Copier le fichier de config MariaDB dans le bon répertoire
-COPY ./conf/50-server.cnf /etc/my.cnf.d/50-server.cnf
+RUN mkdir -p /var/run/mysqld \
+    && chown -R mysql:mysql /var/run/mysqld \
+    && chmod -777 /var/run/mysqld
 
-# Créer les répertoires nécessaires (si besoin)
-RUN mkdir -p /run/mysqld && chown -R mysql:mysql /run/mysqld
-
-# Exposer le port standard de MariaDB
 EXPOSE 3306
 
-# Démarrer MariaDB (simple exemple de CMD)
-CMD ["mysqld"]
+COPY ./tools/mariadb.sh /usr/local/bin/
+COPY ./conf/wordpress.sql /usr/local/bin/
+RUN  chmod +x /usr/local/bin/mariadb.sh
+RUN  chmod +x /usr/local/bin/wordpress.sql
+
+ENTRYPOINT [ "/usr/local/bin/mariadb.sh" ]
+
+CMD [ "mysqld", "--bind-address=0.0.0.0"]

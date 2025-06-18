@@ -1,28 +1,33 @@
 #!/bin/bash
 
-# Démarrer temporairement MariaDB en arrière-plan
-service mariadb start
+mysql_install_db
 
-# Attendre quelques secondes pour que MariaDB soit prêt
-sleep 5
+/etc/init.d/mysql start
 
-# Créer la base de données si elle n'existe pas
-mysql -u root -e "CREATE DATABASE IF NOT EXISTS \`${SQL_DATABASE}\`;"
+if [ -d "/var/lib/mysql/$MARIADB_DATABASE" ]
+then
+  echo "Database is already creat"
+else
 
-# Créer l'utilisateur SQL s'il n'existe pas
-mysql -u root -e "CREATE USER IF NOT EXISTS \`${SQL_USER}\`@'%' IDENTIFIED BY '${SQL_PASSWORD}';"
+  mysql_secure_installation << _EOF_
 
-# Donner tous les droits à cet utilisateur sur la base de données
-mysql -u root -e "GRANT ALL PRIVILEGES ON \`${SQL_DATABASE}\`.* TO \`${SQL_USER}\`@'%';"
+Y
+$MARIADB_ROOT_PASSWORD
+$MARIADB_ROOT_PASSWORD
+Y
+n
+Y
+Y
+_EOF_
 
-# Modifier le mot de passe du root
-mysql -u root -e "ALTER USER 'root'@'localhost' IDENTIFIED BY '${SQL_ROOT_PASSWORD}';"
+  echo "GRANT ALL ON *.* TO 'root'@'%' IDENTIFIED BY '$MARIADB_ROOT_PASSWORD'; FLUSH PRIVILEGES;" | mysql -uroot
 
-# Appliquer les changements
-mysql -u root -p${SQL_ROOT_PASSWORD} -e "FLUSH PRIVILEGES;"
+  echo "CREATE DATABASE IF NOT EXISTS $MARIADB_DATABASE; GRANT ALL ON $MARIADB_DATABASE.* TO '$MARIADB_USER'@'%' IDENTIFIED BY '$MARIADB_PASSWORD'; FLUSH PRIVILEGES;" | mysql -u root
 
-# Arrêter MariaDB proprement
-mysqladmin -u root -p${SQL_ROOT_PASSWORD} shutdown
+mysql -uroot -p$MARIADB_ROOT_PASSWORD $MARIADB_DATABASE < /usr/local/bin/wordpress.sql
 
-# Redémarrer le service en mode sécurisé
-exec mysqld_safe
+fi
+
+/etc/init.d/mysql stop
+
+exec "$@"
