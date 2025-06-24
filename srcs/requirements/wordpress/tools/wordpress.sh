@@ -1,14 +1,8 @@
 #!/bin/bash
 
 # Check if MariaDB is accessible using mysqladmin
-#echo if mysqladmin ping -h "${WORDPRESS_DB_HOST}" -u "${MARIADB_USER}" "--password=${MARIADB_PASS}" --silent
-rm -rf ${WORDPRESS_PATH}/*
+echo if mysqladmin ping -h "${WORDPRESS_DB_HOST}" -u "${MARIADB_USER}" "--password=${MARIADB_PASS}" --silent
 
-echo "Resetting database (DROP + CREATE)..."
-mysql -h "${WORDPRESS_DB_HOST}" -u "${MARIADB_USER}" "--password=${MARIADB_PASS}" -e "DROP DATABASE IF EXISTS ${MARIADB_DATABASE}; CREATE DATABASE ${MARIADB_DATABASE};"
-
-
-echo "${DOMAIN_NAME}"
 mkdir -p /run/php
 
 # to wait until MariaDB is available before proceeding
@@ -50,7 +44,6 @@ wp config create \
     --allow-root
 
 echo "Installing WordPress..."
-echo "DEBUG :URL = ${WORDPRESS_URL}"
 mysql -h "${WORDPRESS_DB_HOST}" -u "${MARIADB_USER}" "--password=${MARIADB_PASS}" -e "DROP DATABASE IF EXISTS ${MARIADB_DATABASE}; CREATE DATABASE ${MARIADB_DATABASE};"
 
 wp core install \
